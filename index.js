@@ -29,6 +29,9 @@ async function run() {
         const usersCollection = client
             .db("master-precision")
             .collection("users");
+        const ordersCollection = client
+            .db("master-precision")
+            .collection("orders");
 
         app.get("/products", async (req, res) => {
             const limit = parseInt(req.query.limit);
@@ -54,6 +57,12 @@ async function run() {
             } catch (error) {
                 res.status(400).send({ message: "Bad request" });
             }
+        });
+
+        app.post("/orders", async (req, res) => {
+            const order = req.body;
+            const result = await ordersCollection.insertOne(order);
+            res.status(200).send(result);
         });
 
         app.put("/user/:email", async (req, res) => {
