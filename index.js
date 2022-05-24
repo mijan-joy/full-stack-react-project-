@@ -127,7 +127,10 @@ async function run() {
         });
         app.put("/users/admin", verifyJWT, async (req, res) => {
             const email = req.query.email;
-            if (req.decoded.email === email) {
+            const requester = await usersCollection.findOne({
+                email: req.decoded.email,
+            });
+            if (req.decoded.email === email && requester.role === "admin") {
                 const userEmail = req.body.email;
                 console.log("user email from admin", userEmail);
                 const filter = { email: userEmail };
