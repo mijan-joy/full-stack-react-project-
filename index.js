@@ -48,6 +48,25 @@ async function run() {
             res.status(200).send(products);
         });
 
+        app.put("/products/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updateDoc = {
+                    $set: req.body,
+                };
+                const filter = { _id: ObjectId(id) };
+                const options = { upsert: true };
+                const result = await productsCollection.updateOne(
+                    filter,
+                    updateDoc,
+                    options
+                );
+                res.status(200).send(result);
+            } catch (error) {
+                res.status(400).send({ message: "bad request" });
+            }
+        });
+
         app.get("/products/:id", async (req, res) => {
             try {
                 const id = req.params.id;
@@ -63,6 +82,13 @@ async function run() {
             const order = req.body;
             const result = await ordersCollection.insertOne(order);
             res.status(200).send(result);
+        });
+
+        app.get("/myOrders", async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const orders = await ordersCollection.find(query).toArray();
+            res.send(orders);
         });
 
         app.put("/user/:email", async (req, res) => {
