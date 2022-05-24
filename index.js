@@ -130,7 +130,7 @@ async function run() {
             const requester = await usersCollection.findOne({
                 email: req.decoded.email,
             });
-            if (req.decoded.email === email && requester.role === "admin") {
+            if (req.decoded.email === email && requester?.role === "admin") {
                 const userEmail = req.body.email;
                 console.log("user email from admin", userEmail);
                 const filter = { email: userEmail };
@@ -144,6 +144,19 @@ async function run() {
                     option
                 );
                 return res.status(200).send(result);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
+        app.get("/checkAdmin", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req?.decoded?.email === email) {
+                const user = await usersCollection.findOne({ email: email });
+                return res
+                    .status(200)
+                    .send({ isAdmin: user?.role === "admin" });
             }
             return res
                 .status(403)
