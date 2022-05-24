@@ -23,12 +23,29 @@ async function run() {
     try {
         await client.connect();
         console.log("db connected");
-        const productCollection = client
+        const productsCollection = client
             .db("master-precision")
             .collection("products");
         const usersCollection = client
             .db("master-precision")
             .collection("users");
+
+        app.get("/products", async (req, res) => {
+            const limit = parseInt(req.query.limit);
+            if (limit) {
+                const products = await productsCollection
+                    .find({})
+                    .sort({ _id: -1 })
+                    .toArray()
+                    .limit(limit);
+                return res.status(200).send(products);
+            }
+            const products = await productsCollection
+                .find({})
+                .sort({ _id: -1 })
+                .toArray();
+            res.status(200).send(products);
+        });
 
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email;
