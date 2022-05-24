@@ -33,11 +33,9 @@ async function run() {
         app.get("/products", async (req, res) => {
             const limit = parseInt(req.query.limit);
             if (limit) {
-                const products = await productsCollection
-                    .find({})
-                    .sort({ _id: -1 })
-                    .toArray()
-                    .limit(limit);
+                const option = { sort: { _id: -1 } };
+                const cursor = productsCollection.find({}, option).limit(limit);
+                const products = await cursor.toArray();
                 return res.status(200).send(products);
             }
             const products = await productsCollection
@@ -45,6 +43,17 @@ async function run() {
                 .sort({ _id: -1 })
                 .toArray();
             res.status(200).send(products);
+        });
+
+        app.get("/products/:id", async (req, res) => {
+            try {
+                const id = req.params.id;
+                const query = { _id: ObjectId(id) };
+                const product = await productsCollection.findOne(query);
+                res.status(200).send(product);
+            } catch (error) {
+                res.status(400).send({ message: "Bad request" });
+            }
         });
 
         app.put("/user/:email", async (req, res) => {
