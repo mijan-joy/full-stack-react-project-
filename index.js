@@ -114,6 +114,39 @@ async function run() {
                 .send({ message: "Forbidden! Access Denied" });
         });
 
+        app.get("/users", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req.decoded.email === email) {
+                const query = {};
+                const orders = await usersCollection.find(query).toArray();
+                return res.send(orders);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+        app.put("/users/admin", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req.decoded.email === email) {
+                const userEmail = req.body.email;
+                console.log("user email from admin", userEmail);
+                const filter = { email: userEmail };
+                const option = { upsert: true };
+                const updateDoc = {
+                    $set: { role: "admin" },
+                };
+                const result = await usersCollection.updateOne(
+                    filter,
+                    updateDoc,
+                    option
+                );
+                return res.status(200).send(result);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email;
             const user = req.body;
