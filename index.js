@@ -101,6 +101,25 @@ async function run() {
             res.status(200).send(result);
         });
 
+        app.put("/orders/:id", verifyJWT, async (req, res) => {
+            try {
+                const id = req.params.id;
+                const updateDoc = {
+                    $set: { shipped: true },
+                };
+                const filter = { _id: ObjectId(id) };
+                const options = { upsert: true };
+                const result = await ordersCollection.updateOne(
+                    filter,
+                    updateDoc,
+                    options
+                );
+                return res.status(200).send(result);
+            } catch (error) {
+                res.status(400).send({ message: "bad request" });
+            }
+        });
+
         app.get("/myOrders", verifyJWT, async (req, res) => {
             console.log(req.decoded);
             const email = req.query.email;
@@ -143,6 +162,20 @@ async function run() {
                     updateDoc,
                     option
                 );
+                return res.status(200).send(result);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
+        app.get("/dashboard/allOrders", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const requester = await usersCollection.findOne({
+                email: req.decoded.email,
+            });
+            if (req.decoded.email === email && requester?.role === "admin") {
+                const result = await ordersCollection.find({}).toArray();
                 return res.status(200).send(result);
             }
             return res
