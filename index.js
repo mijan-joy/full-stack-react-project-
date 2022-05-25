@@ -198,19 +198,14 @@ async function run() {
         app.delete("/orders/:id", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
-                const requester = await usersCollection.findOne({
-                    email: req.decoded.email,
-                });
-                if (
-                    req.decoded.email === email &&
-                    requester?.role === "admin"
-                ) {
+                if (req.decoded.email === email) {
                     const id = req.params.id;
                     const result = await ordersCollection.deleteOne({
                         _id: ObjectId(id),
                     });
                     return res.status(200).send(result);
                 }
+                return res.status(400).send({ message: "bad request" });
             } catch (error) {
                 res.status(400).send({ message: "bad request" });
             }
