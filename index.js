@@ -124,6 +124,26 @@ async function run() {
             res.status(200).send(result);
         });
 
+        app.post("/addProduct", verifyJWT, async (req, res) => {
+            try {
+                const email = req.query.email;
+                const requester = await usersCollection.findOne({
+                    email: req.decoded.email,
+                });
+
+                if (
+                    req.decoded.email === email &&
+                    requester?.role === "admin"
+                ) {
+                    const doc = req.body;
+                    const result = await productsCollection.insertOne(doc);
+                    return res.status(200).send(result);
+                }
+            } catch (error) {
+                res.status(400).send({ message: "bad request" });
+            }
+        });
+
         app.delete("/orders/:id", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
