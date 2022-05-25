@@ -65,20 +65,43 @@ async function run() {
             res.status(200).send(products);
         });
 
-        app.put("/products/:id", async (req, res) => {
+        app.put("/products/:id", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const requester = await usersCollection.findOne({
+                email: req.decoded.email,
+            });
             try {
-                const id = req.params.id;
-                const updateDoc = {
-                    $set: req.body,
-                };
-                const filter = { _id: ObjectId(id) };
-                const options = { upsert: true };
-                const result = await productsCollection.updateOne(
-                    filter,
-                    updateDoc,
-                    options
-                );
-                res.status(200).send(result);
+                if (
+                    req.decoded.email === email &&
+                    requester?.role === "admin"
+                ) {
+                    const id = req.params.id;
+                    const product = await productsCollection.findOne({
+                        _id: ObjectId(id),
+                    });
+                    const productStock = parseInt(product.stock);
+                    const deliveryQuantity = parseInt(req.query.quantity);
+                    if (productStock < deliveryQuantity) {
+                        return res
+                            .status(406)
+                            .send({ message: "Insufficient Stock" });
+                    }
+                    const newStock = productStock - deliveryQuantity;
+                    const filter = { _id: ObjectId(id) };
+                    const updateDoc = {
+                        $set: { stock: newStock },
+                    };
+                    const options = { upsert: true };
+                    const result = await productsCollection.updateOne(
+                        filter,
+                        updateDoc,
+                        options
+                    );
+                    return res.status(200).send(result);
+                }
+                return res
+                    .status(403)
+                    .send({ message: "Forbidden! Access Denied" });
             } catch (error) {
                 res.status(400).send({ message: "bad request" });
             }
@@ -121,7 +144,6 @@ async function run() {
         });
 
         app.get("/myOrders", verifyJWT, async (req, res) => {
-            console.log(req.decoded);
             const email = req.query.email;
             if (req.decoded.email === email) {
                 const query = { email: email };
