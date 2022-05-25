@@ -49,6 +49,9 @@ async function run() {
         const ordersCollection = client
             .db("master-precision")
             .collection("orders");
+        const reviewsCollection = client
+            .db("master-precision")
+            .collection("reviews");
 
         app.get("/products", async (req, res) => {
             const limit = parseInt(req.query.limit);
@@ -144,6 +147,42 @@ async function run() {
             }
         });
 
+        app.put("/review", verifyJWT, async (req, res) => {
+            try {
+                const email = req.query.email;
+                if (req.decoded.email === email) {
+                    const filter = { email: email };
+                    const options = { upsert: true };
+                    const updateDoc = {
+                        $set: req.body,
+                    };
+                    const result = await reviewsCollection.updateOne(
+                        filter,
+                        updateDoc,
+                        options
+                    );
+                    return res.status(200).send(result);
+                }
+            } catch (error) {
+                res.status(400).send({ message: "bad request" });
+            }
+        });
+
+        app.get("/reviews", async (req, res) => {
+            const limit = parseInt(req.query.limit);
+            if (limit) {
+                const option = { sort: { _id: -1 } };
+                const cursor = reviewsCollection.find({}, option).limit(limit);
+                const reviews = await cursor.toArray();
+                return res.status(200).send(reviews);
+            }
+            const reviews = await reviewsCollection
+                .find({})
+                .sort({ _id: -1 })
+                .toArray();
+            res.status(200).send(reviews);
+        });
+
         app.delete("/orders/:id", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
@@ -200,8 +239,20 @@ async function run() {
             const email = req.query.email;
             if (req.decoded.email === email) {
                 const query = {};
-                const orders = await usersCollection.find(query).toArray();
-                return res.send(orders);
+                const users = await usersCollection.find(query).toArray();
+                return res.send(users);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
+        app.get("/user", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req.decoded.email === email) {
+                const query = { email: email };
+                const user = await usersCollection.findOne(query);
+                return res.send(user);
             }
             return res
                 .status(403)
