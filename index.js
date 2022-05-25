@@ -168,6 +168,18 @@ async function run() {
             }
         });
 
+        app.get("/myReview", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req.decoded.email === email) {
+                const query = { email: email };
+                const review = await reviewsCollection.findOne(query);
+                return res.send(review);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
         app.get("/reviews", async (req, res) => {
             const limit = parseInt(req.query.limit);
             if (limit) {
