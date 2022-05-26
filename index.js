@@ -234,12 +234,30 @@ async function run() {
             const email = req.query.email;
             if (req.decoded.email === email) {
                 const query = { email: email };
-                const orders = await ordersCollection.find(query).toArray();
+                const option = { sort: { _id: -1 } };
+                const cursor = ordersCollection.find(query, option);
+                const orders = await cursor.toArray();
                 return res.send(orders);
             }
             return res
                 .status(403)
                 .send({ message: "Forbidden! Access Denied" });
+        });
+
+        app.get("/order/:id", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            try {
+                const id = req.params.id;
+                if (req.decoded.email === email) {
+                    const query = { _id: ObjectId(id) };
+                    const order = await ordersCollection.findOne(query);
+                    return res.send(order);
+                }
+                return res
+                    .status(403)
+                    .send({ message: "Forbidden! Access Denied" });
+            } catch (error) {}
+            return res.status(400).send({ message: "Bad Request" });
         });
 
         app.get("/users", verifyJWT, async (req, res) => {
