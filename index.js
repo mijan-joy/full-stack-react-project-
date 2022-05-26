@@ -329,7 +329,10 @@ async function run() {
                 email: req.decoded.email,
             });
             if (req.decoded.email === email && requester?.role === "admin") {
-                const result = await ordersCollection.find({}).toArray();
+                const query = {};
+                const option = { sort: { _id: -1 } };
+                const cursor = ordersCollection.find(query, option);
+                const result = await cursor.toArray();
                 return res.status(200).send(result);
             }
             return res
