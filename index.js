@@ -53,6 +53,12 @@ async function run() {
         const reviewsCollection = client
             .db("master-precision")
             .collection("reviews");
+        const qnaCollection = client.db("master-precision").collection("qna");
+
+        app.get("/qna", async (req, res) => {
+            const result = await qnaCollection.find({}).toArray();
+            res.send(result);
+        });
 
         app.get("/products", async (req, res) => {
             const limit = parseInt(req.query.limit);
@@ -101,6 +107,31 @@ async function run() {
                         updateDoc,
                         options
                     );
+                    return res.status(200).send(result);
+                }
+                return res
+                    .status(403)
+                    .send({ message: "Forbidden! Access Denied" });
+            } catch (error) {
+                res.status(400).send({ message: "bad request" });
+            }
+        });
+
+        app.delete("/products/delete/:id", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            const requester = await usersCollection.findOne({
+                email: req.decoded.email,
+            });
+            console.log(email, req.decoded.email, requester?.role);
+            try {
+                if (
+                    req.decoded.email === email &&
+                    requester?.role === "admin"
+                ) {
+                    const id = req.params.id;
+                    const result = await productsCollection.deleteOne({
+                        _id: ObjectId(id),
+                    });
                     return res.status(200).send(result);
                 }
                 return res
@@ -305,7 +336,7 @@ async function run() {
             });
             if (req.decoded.email === email && requester?.role === "admin") {
                 const userEmail = req.body.email;
-                console.log("user email from admin", userEmail);
+
                 const filter = { email: userEmail };
                 const option = { upsert: true };
                 const updateDoc = {
