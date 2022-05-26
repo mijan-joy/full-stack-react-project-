@@ -7,12 +7,10 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 var jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-//use middleware==========
+//use middleware
 app.use(cors());
 app.use(express.json());
-//========================
 
-//========================
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.8jxyt.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     useNewUrlParser: true,
@@ -36,7 +34,7 @@ function verifyJWT(req, res, next) {
         next();
     });
 }
-//========================
+
 async function run() {
     try {
         await client.connect();
@@ -59,6 +57,7 @@ async function run() {
             res.send(result);
         });
 
+        //Get products
         app.get("/products", async (req, res) => {
             const limit = parseInt(req.query.limit);
             if (limit) {
@@ -74,6 +73,7 @@ async function run() {
             res.status(200).send(products);
         });
 
+        //Get products by ID
         app.put("/products/:id", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const requester = await usersCollection.findOne({
@@ -116,6 +116,7 @@ async function run() {
             }
         });
 
+        //Delete product by ID
         app.delete("/products/delete/:id", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const requester = await usersCollection.findOne({
@@ -140,6 +141,7 @@ async function run() {
             }
         });
 
+        //Get product data by id
         app.get("/products/:id", async (req, res) => {
             try {
                 const id = req.params.id;
@@ -151,7 +153,8 @@ async function run() {
             }
         });
 
-        app.post("/orders", async (req, res) => {
+        // Add order
+        app.post("/orders", verifyJWT, async (req, res) => {
             const order = req.body;
             const result = await ordersCollection.insertOne(order);
             res.status(200).send(result);
@@ -171,6 +174,7 @@ async function run() {
             });
         });
 
+        //Add New Product (Admin)
         app.post("/addProduct", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
@@ -191,6 +195,7 @@ async function run() {
             }
         });
 
+        //Add or update review
         app.put("/review", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
@@ -212,6 +217,7 @@ async function run() {
             }
         });
 
+        //Get review by email
         app.get("/myReview", verifyJWT, async (req, res) => {
             const email = req.query.email;
             if (req.decoded.email === email) {
@@ -224,6 +230,7 @@ async function run() {
                 .send({ message: "Forbidden! Access Denied" });
         });
 
+        //Get reviews
         app.get("/reviews", async (req, res) => {
             const limit = parseInt(req.query.limit);
             if (limit) {
@@ -239,6 +246,7 @@ async function run() {
             res.status(200).send(reviews);
         });
 
+        // Delete order
         app.delete("/orders/:id", verifyJWT, async (req, res) => {
             try {
                 const email = req.query.email;
@@ -255,6 +263,7 @@ async function run() {
             }
         });
 
+        //Update order data
         app.put("/orders/:id", verifyJWT, async (req, res) => {
             try {
                 const id = req.params.id;
@@ -289,6 +298,7 @@ async function run() {
                 .send({ message: "Forbidden! Access Denied" });
         });
 
+        //Get order by id
         app.get("/order/:id", verifyJWT, async (req, res) => {
             const email = req.query.email;
             try {
@@ -414,15 +424,12 @@ async function run() {
     }
 }
 
-//========================
 app.get("/", (req, res) => {
     res.send("server is running");
 });
-//========================
 
-//========================
 app.listen(port, () => {
     console.log("server is running at port: ", port);
 });
-//========================
+
 run().catch(console.dir);
