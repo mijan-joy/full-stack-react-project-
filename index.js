@@ -230,7 +230,7 @@ async function run() {
             try {
                 const id = req.params.id;
                 const updateDoc = {
-                    $set: { shipped: true },
+                    $set: req.body,
                 };
                 const filter = { _id: ObjectId(id) };
                 const options = { upsert: true };
