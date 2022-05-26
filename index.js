@@ -40,7 +40,6 @@ function verifyJWT(req, res, next) {
 async function run() {
     try {
         await client.connect();
-        console.log("db connected");
         const productsCollection = client
             .db("master-precision")
             .collection("products");
@@ -122,7 +121,6 @@ async function run() {
             const requester = await usersCollection.findOne({
                 email: req.decoded.email,
             });
-            console.log(email, req.decoded.email, requester?.role);
             try {
                 if (
                     req.decoded.email === email &&
@@ -276,6 +274,7 @@ async function run() {
             }
         });
 
+        //Get My Orders
         app.get("/myOrders", verifyJWT, async (req, res) => {
             const email = req.query.email;
             if (req.decoded.email === email) {
@@ -306,29 +305,39 @@ async function run() {
             return res.status(400).send({ message: "Bad Request" });
         });
 
-        app.get("/users", verifyJWT, async (req, res) => {
+        // Get All Order
+        app.get("/dashboard/allOrders", verifyJWT, async (req, res) => {
             const email = req.query.email;
-            if (req.decoded.email === email) {
+            const requester = await usersCollection.findOne({
+                email: req.decoded.email,
+            });
+            if (req.decoded.email === email && requester?.role === "admin") {
                 const query = {};
-                const users = await usersCollection.find(query).toArray();
-                return res.send(users);
+                const option = { sort: { _id: -1 } };
+                const cursor = ordersCollection.find(query, option);
+                const result = await cursor.toArray();
+                return res.status(200).send(result);
             }
             return res
                 .status(403)
                 .send({ message: "Forbidden! Access Denied" });
         });
 
-        app.get("/user", verifyJWT, async (req, res) => {
+        //Check Admin
+        app.get("/checkAdmin", verifyJWT, async (req, res) => {
             const email = req.query.email;
-            if (req.decoded.email === email) {
-                const query = { email: email };
-                const user = await usersCollection.findOne(query);
-                return res.send(user);
+            if (req?.decoded?.email === email) {
+                const user = await usersCollection.findOne({ email: email });
+                return res
+                    .status(200)
+                    .send({ isAdmin: user?.role === "admin" });
             }
             return res
                 .status(403)
                 .send({ message: "Forbidden! Access Denied" });
         });
+
+        // Make Admin
         app.put("/users/admin", verifyJWT, async (req, res) => {
             const email = req.query.email;
             const requester = await usersCollection.findOne({
@@ -354,36 +363,33 @@ async function run() {
                 .send({ message: "Forbidden! Access Denied" });
         });
 
-        app.get("/dashboard/allOrders", verifyJWT, async (req, res) => {
+        //Get single user
+        app.get("/user", verifyJWT, async (req, res) => {
             const email = req.query.email;
-            const requester = await usersCollection.findOne({
-                email: req.decoded.email,
-            });
-            if (req.decoded.email === email && requester?.role === "admin") {
+            if (req.decoded.email === email) {
+                const query = { email: email };
+                const user = await usersCollection.findOne(query);
+                return res.send(user);
+            }
+            return res
+                .status(403)
+                .send({ message: "Forbidden! Access Denied" });
+        });
+
+        //Get users
+        app.get("/users", verifyJWT, async (req, res) => {
+            const email = req.query.email;
+            if (req.decoded.email === email) {
                 const query = {};
-                const option = { sort: { _id: -1 } };
-                const cursor = ordersCollection.find(query, option);
-                const result = await cursor.toArray();
-                return res.status(200).send(result);
+                const users = await usersCollection.find(query).toArray();
+                return res.send(users);
             }
             return res
                 .status(403)
                 .send({ message: "Forbidden! Access Denied" });
         });
 
-        app.get("/checkAdmin", verifyJWT, async (req, res) => {
-            const email = req.query.email;
-            if (req?.decoded?.email === email) {
-                const user = await usersCollection.findOne({ email: email });
-                return res
-                    .status(200)
-                    .send({ isAdmin: user?.role === "admin" });
-            }
-            return res
-                .status(403)
-                .send({ message: "Forbidden! Access Denied" });
-        });
-
+        //Update  user data
         app.put("/user/:email", async (req, res) => {
             const email = req.params.email;
             const user = req.body;
